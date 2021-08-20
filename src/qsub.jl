@@ -21,20 +21,12 @@ function launch(manager::QSUB, params::Dict, launched::Array,
         time = "h_rt=$(manager.time)"
         mem = "mem_free=$(manager.memory)G"
 
-        jobname = `julia-$(getpid())`
-
-        if np > 1
-            outfile = "$home/$jobname."*raw"$SGE_TASK_ID.out"
-            fname(n) = "$home/$jobname."*"$n.out"
-        else
-            outfile = "$home/$jobname.out"
-            fname(n) = "$home/$jobname.out"
-        end
-        
+        jobname = "julia-$(getpid())"
+       
         cmd = `cd $dir '&&' $exename $exeflags $(worker_arg())` |>
             Base.shell_escape
         qsub1 = `echo $(cmd)`
-        qsub2 = `qsub -N $jobname -terse -j y -R y -wd $wd -l $time,$mem -t 1-$np -V -o $outfile`
+        qsub2 = `qsub -N $jobname -terse -j y -R y -wd $wd -l $time,$mem -t 1-$np -V`
         qsub_cmd = pipeline(qsub1, qsub2)
 
         out = open(qsub_cmd)
@@ -49,31 +41,39 @@ function launch(manager::QSUB, params::Dict, launched::Array,
 
         @info "Job $id is in queue"
 
+        filenames(i) = [
+            "$wd/julia-$(getpid()).o$id-$i",
+            "$wd/julia-$(getpid())-$i.o$id",
+            "$wd/julia-$(getpid()).o$id.$i"
+        ]
 
         for i in 1:np
 
-            outfile = fname(i)
+            fnames = filenames(i)
+
             prog = ProgressUnknown(
                 "Looking for $outfile",
                 spinner=true
             )
-            outfile = outfile |> Base.shell_escape
-            while isfile(outfile) == false
+
+            j = 0
+            while (j=findfirst(x->isfile(x),fnames))==nothing
                 ProgressMeter.update!(prog, spinner=raw"|/-\-")
                 sleep(1)
             end
+            fname = fnames[j]
             ProgressMeter.finish!(prog)
 
-            @info "Found job file: $outfile"
+            @info "Found job file: $fname"
 
-            cmd_config = `tail -f $outfile`
+            cmd_config = `tail -f $fname`
             config = WorkerConfig()
             stream = open(detach(cmd_config))
             config.io = stream.out
             config.userdata = Dict{Symbol, Any}(
                 :job=>id,
                 :task=>i,
-                :iofile=>outfile
+                :iofile=>fname
             )
             push!(launched, config)
             notify(c)
