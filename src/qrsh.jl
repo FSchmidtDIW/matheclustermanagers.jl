@@ -29,14 +29,12 @@ function launch(manager::QRSH, params::Dict, launched::Array,
         if np == 1
             @info "Starting job using qrsh command"
         else
-            @info "Starting $np jobs qrsh command"
+            @info "Starting $np jobs using qrsh command"
         end
-
-        stream_proc = [open(qrsh_cmd) for i in 1:np]
 
         for i in 1:np
             config = WorkerConfig()
-            config.io, io_proc = stream_proc[i]
+            config.io, io_proc = open(qrsh_cmd)
 
             @show config.io
             @show io_proc
