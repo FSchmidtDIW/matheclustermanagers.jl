@@ -17,6 +17,9 @@ function launch(manager::QRSH, params::Dict, launched::Array,
         exename = params[:exename]
         exeflags = params[:exeflags]
         dir = params[:dir]
+        wd = manager.wd
+        time = "h_rt=$(manager.time)"
+        mem = "mem_free=$(manager.memory)G"
 
         jobname = `julia-$(getpid())`
 
