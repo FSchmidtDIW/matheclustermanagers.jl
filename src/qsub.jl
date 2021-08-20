@@ -22,7 +22,15 @@ function launch(manager::QSUB, params::Dict, launched::Array,
         mem = "mem_free=$(manager.memory)G"
 
         jobname = `julia-$(getpid())`
-        outfile = `$home/$jobname.out`
+
+        if np > 1
+            outfile = "$home/$jobname."*raw"$SGE_TASK_ID.out"
+            fname(n) = "$home/$jobname."*"$n.out"
+        else
+            outfile = "$home/$jobname.out"
+            fname(n) = "$home/$jobname.out"
+        end
+        
         cmd = `cd $dir '&&' $exename $exeflags $(worker_arg())` |>
             Base.shell_escape
         qsub1 = `echo $(cmd)`
@@ -41,13 +49,10 @@ function launch(manager::QSUB, params::Dict, launched::Array,
 
         @info "Job $id is in queue"
 
-        fname(n) = "$(outfile).$n"
+
         for i in 1:np
 
-            if np > 1
-                outfile = fname(i)
-            end
-
+            outfile = fname(i)
             prog = ProgressUnknown(
                 "Looking for $outfile",
                 spinner=true
