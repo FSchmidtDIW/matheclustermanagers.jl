@@ -34,12 +34,12 @@ function launch(manager::QRSH, params::Dict, launched::Array,
 
         for i in 1:np
             config = WorkerConfig()
-            config.io, io_proc = open(qrsh_cmd)
+            stream = open(qrsh_cmd)
+            config.io = stream.out
 
-            @show config.io
-            @show io_proc
-
-            config.userdata = Dict{Symbol, Any}(:task => i, :process => io_proc)
+            @show stream
+        
+            config.userdata = Dict{Symbol, Any}(:task => i, :process => stream)
             push!(launched, config)
             notify(c)
 
