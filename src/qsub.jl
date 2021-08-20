@@ -22,7 +22,7 @@ function launch(manager::QSUB, params::Dict, launched::Array,
         mem = "mem_free=$(manager.memory)G"
 
         jobname = `julia-$(getpid())`
-        outfile = `$dir/$jobname.out`
+        outfile = `$home/$jobname.out`
         cmd = `cd $dir '&&' $exename $exeflags $(worker_arg())` |>
             Base.shell_escape
         qsub1 = `echo $(cmd)`
@@ -41,36 +41,43 @@ function launch(manager::QSUB, params::Dict, launched::Array,
 
         @info "Job $id is in queue"
 
-        prog = ProgressUnknown(
-            "Job id is $id, waiting for job to start",
-            spinner=true
-        )
-        outfile = outfile |> Base.shell_escape
-        while isfile(outfile) == false
-            ProgressMeter.update!(prog, spinner=raw"|/-\-")
-            sleep(1)
+        fname(n) = "$(outfile).$n"
+        for i in 1:np
+
+            if np > 1
+                outfile = fname(i)
+            end
+
+            prog = ProgressUnknown(
+                "Looking for $oufile",
+                spinner=true
+            )
+            outfile = outfile |> Base.shell_escape
+            while isfile(outfile) == false
+                ProgressMeter.update!(prog, spinner=raw"|/-\-")
+                sleep(1)
+            end
+            ProgressMeter.finish!(prog)
+
+            @info "Found job file: $outfile"
+
+            cmd_config = `tail -f $outfile`
+            config = WorkerConfig()
+            stream = open(detach(cmd_config))
+            config.io = stream.out
+            config.userdata = Dict{Symbol, Any}(
+                :job=>id,
+                :task=>i,
+                :iofile=>outfile
+            )
+            push!(launched, config)
+            notify(c)
+            @info "Added worker $i from job $id"
+
+            if i == np
+                @info "All workers from job $id added"
+            end
         end
-        ProgressMeter.finish!(prog, spinner="*")
-
-        println("Found job file: $outfile")
-
-        cmd_config = `tail -f $outfile`
-
-        config = WorkerConfig()
-        stream = open(detach(cmd_config))
-        @show stream
-        config.io = stream.out
-        config.userdata = Dict{Symbol, Any}(
-            :job=>id,
-            :task=>1,
-            :iofile=>outfile
-        )
-        push!(launched, config)
-        @show config
-        println("pushed config")
-        notify(c)
-        println("notifying")
-
     catch e
         println("Error launching workers")
         throw(e)
@@ -86,7 +93,7 @@ end
 
 function kill(manager::QSUB, id::Int64, config::WorkerConfig)
     remotecall(exit, id)
-    close(get(config.io))
+    close(config.io)
 
     if isfile(config.userdata[:iofile])
         rm(config.userdata[:iofile])
