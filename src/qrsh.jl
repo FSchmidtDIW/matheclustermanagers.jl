@@ -27,10 +27,12 @@ function launch(manager::QRSH, params::Dict, launched::Array,
 
         function create_qrsh_cmd(n::Int, single)
             if single
-                return `qrsh -V -N $jobname -now n -wd $wd -l $time,$mem "$cmd"`
+                jn = jobname
             else
-                return `qrsh -V -N $jobname_$n -now n -wd $wd -l $time,$mem "$cmd"`
+                jn = "$(jobname)_$(n)"
             end
+
+            return `qrsh -V -N $jn -now n -wd $wd -l $time,$mem "$cmd"`
         end
 
         single = np == 1
