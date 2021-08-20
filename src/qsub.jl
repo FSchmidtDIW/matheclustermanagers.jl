@@ -52,7 +52,7 @@ function launch(manager::QSUB, params::Dict, launched::Array,
             fnames = filenames(i)
 
             prog = ProgressUnknown(
-                "Looking for $outfile",
+                "Looking for output files",
                 spinner=true
             )
 
