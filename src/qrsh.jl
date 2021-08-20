@@ -36,9 +36,10 @@ function launch(manager::QRSH, params::Dict, launched::Array,
 
         for i in 1:np
             config = WorkerConfig()
-            config.io = stream_proc[i]
+            config.io, io_proc = stream_proc[i]
 
-            @show stream_proc[i]
+            @show config.io
+            @show io_proc
 
             config.userdata = Dict{Symbol, Any}(:task => i, :process => io_proc)
             push!(launched, config)
