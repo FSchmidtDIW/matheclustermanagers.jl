@@ -1,5 +1,10 @@
+export qrsh
+
 struct QRSH <: ClusterManager
     np::Integer
+    wd::String
+    time::Int
+    memory::Int
 end
 
 
@@ -16,7 +21,13 @@ function launch(manager::QRSH, params::Dict, launched::Array,
         jobname = `julia-$(getpid())`
 
         cmd = `cd $dir '&&' $exename $exeflags $(worker_arg())`
-        qrsh_cmd = `qrsh -V -N $jobname -now n -wd $wd "$cmd"`
+        qrsh_cmd = `qrsh -V -N $jobname -now n -wd $wd -l $time,$mem "$cmd"`
+
+        if np == 1
+            @info "Starting job using qrsh command"
+        else
+            @info "Starting $np jobs qrsh command"
+        end
 
         stream_proc = [open(qrsh_cmd) for i in 1:np]
 
@@ -26,9 +37,15 @@ function launch(manager::QRSH, params::Dict, launched::Array,
 
             @show stream_proc[i]
 
-            config.userdata = Dict{Symbol, Any}(:task => i)
+            config.userdata = Dict{Symbol, Any}(:task => i, :process => io_proc)
             push!(launched, config)
             notify(c)
+
+            @info "Added worker $i"
+
+            if i == np
+                @info "All workers added"
+            end
         end
 
     catch e
@@ -47,11 +64,11 @@ end
 function kill(manager::QRSH, id::Int64, config::WorkerConfig)
 
     remotecall(exit,id)
-    close(get(config.io))
+    close(config.io)
 
-    kill(get(config.io),15)
-
+    kill(config.userdata[:process], 15)
 end
 
-
-qrsh(n::Int; kwargs...) = addprocs(QRSH(n); kwargs...)
+function qrsh(n::Int; wdir=pwd(), timelimit::Int=10000, ram::Int=4,  kwargs...)
+    addprocs(QRSH(n, wdir, timelimit, ram); kwargs...)
+end

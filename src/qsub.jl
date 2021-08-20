@@ -29,6 +29,12 @@ function launch(manager::QSUB, params::Dict, launched::Array,
         qsub2 = `qsub -N $jobname -terse -j y -R y -wd $wd -l $time,$mem -t 1-$np -V`
         qsub_cmd = pipeline(qsub1, qsub2)
 
+        if np == 1
+            @info "Starting job using qsub command"
+        else
+            @info "Starting $np jobs qsub command"
+        end
+
         out = open(qsub_cmd)
         if !success(out)
             throw(error())
