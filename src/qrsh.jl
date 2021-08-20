@@ -24,9 +24,18 @@ function launch(manager::QRSH, params::Dict, launched::Array,
         jobname = `julia-$(getpid())`
 
         cmd = `cd $dir '&&' $exename $exeflags $(worker_arg())`
-        qrsh_cmd = `qrsh -V -N $jobname -now n -wd $wd -l $time,$mem "$cmd"`
 
-        if np == 1
+        function create_qrsh_cmd(n::Int, single)
+            if single
+                return `qrsh -V -N $jobname -now n -wd $wd -l $time,$mem "$cmd"`
+            else
+                return `qrsh -V -N $jobname_$n -now n -wd $wd -l $time,$mem "$cmd"`
+            end
+        end
+
+        single = np == 1
+
+        if single
             @info "Starting job using qrsh command"
         else
             @info "Starting $np jobs using qrsh command"
@@ -34,19 +43,15 @@ function launch(manager::QRSH, params::Dict, launched::Array,
 
         for i in 1:np
             config = WorkerConfig()
-            stream = open(qrsh_cmd)
+            stream = open(create_qrsh_cmd(i, single))
             config.io = stream.out
 
-            @show stream
-        
             config.userdata = Dict{Symbol, Any}(:task => i, :process => stream)
             push!(launched, config)
             notify(c)
 
-            @info "Added worker $i"
-
             if i == np
-                @info "All workers added"
+                single ? (@info "One worker added") : (@info "$np workers added")
             end
         end
 
