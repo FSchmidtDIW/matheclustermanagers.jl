@@ -49,7 +49,7 @@ function launch(manager::QSUB, params::Dict, launched::Array,
             end
 
             prog = ProgressUnknown(
-                "Looking for $oufile",
+                "Looking for $outfile",
                 spinner=true
             )
             outfile = outfile |> Base.shell_escape
