@@ -5,6 +5,7 @@ struct QRSH <: ClusterManager
     wd::String
     time::Int
     memory::Int
+    mp::Int
 end
 
 
@@ -20,6 +21,7 @@ function launch(manager::QRSH, params::Dict, launched::Array,
         wd = manager.wd
         time = "h_rt=$(manager.time)"
         mem = "mem_free=$(manager.memory)G"
+        mp = manager.mp
 
         jobname = `julia-$(getpid())`
 
@@ -32,7 +34,7 @@ function launch(manager::QRSH, params::Dict, launched::Array,
                 jn = "$(jobname)_$(n)"
             end
 
-            return `qrsh -V -N $jn -now n -wd $wd -l $time,$mem "$cmd"`
+            return `qrsh -V -N $jn -now n -wd $wd -pe $mp -l $time,$mem "$cmd"`
         end
 
         single = np == 1
@@ -78,6 +80,8 @@ function kill(manager::QRSH, id::Int64, config::WorkerConfig)
     kill(config.userdata[:process], 15)
 end
 
-function qrsh(n::Int; wdir=pwd(), timelimit::Int=10000, ram::Int=4,  kwargs...)
-    addprocs(QRSH(n, wdir, timelimit, ram); kwargs...)
+function qrsh(n::Int;
+    wdir=pwd(), timelimit::Int=10000, ram::Int=4, mp=1, kwargs...)
+
+    addprocs(QRSH(n, wdir, timelimit, ram, mp); kwargs...)
 end
