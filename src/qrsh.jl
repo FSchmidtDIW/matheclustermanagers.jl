@@ -34,7 +34,7 @@ function launch(manager::QRSH, params::Dict, launched::Array,
                 jn = "$(jobname)_$(n)"
             end
 
-            return `qrsh -V -N $jn -now n -wd $wd -pe $mp -l $time,$mem "$cmd"`
+            return `qrsh -V -N $jn -now n -wd $wd -pe mp $mp -l $time,$mem "$cmd"`
         end
 
         single = np == 1
