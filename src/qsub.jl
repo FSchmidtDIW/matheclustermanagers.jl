@@ -20,15 +20,17 @@ function launch(manager::QSUB, params::Dict, launched::Array,
         wd = manager.wd
         time = "h_rt=$(manager.time)"
         mem = "mem_free=$(manager.memory)G"
-        tempdir = mktempdir()
-        @info "Temporary directory for output files is $tempdir"
+        tempdir = mktempdir(wd)
+        
         
         jobname = "julia-$(getpid())"
+        outputfile = joinpath(tempdir, "jobname.o")
+        @info "Temporary directory for output files is $outputfile"
        
         cmd = `cd $dir '&&' $exename $exeflags $(worker_arg())` |>
             Base.shell_escape
         qsub1 = `echo $(cmd)`
-        qsub2 = `qsub -N $jobname -terse -j y -R y -wd $wd -o $tempdir -l $time,$mem -t 1-$np -V`
+        qsub2 = `qsub -N $jobname -terse -j y -R y -wd $wd -o $outputfile -l $time,$mem -t 1-$np -V`
         qsub_cmd = pipeline(qsub1, qsub2)
 
         if np == 1
