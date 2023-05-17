@@ -20,13 +20,15 @@ function launch(manager::QSUB, params::Dict, launched::Array,
         wd = manager.wd
         time = "h_rt=$(manager.time)"
         mem = "mem_free=$(manager.memory)G"
-
+        tempdir = mktempdir()
+        @info "Temporary directory for output files is $tempdir"
+        
         jobname = "julia-$(getpid())"
        
         cmd = `cd $dir '&&' $exename $exeflags $(worker_arg())` |>
             Base.shell_escape
         qsub1 = `echo $(cmd)`
-        qsub2 = `qsub -N $jobname -terse -j y -R y -wd $wd -l $time,$mem -t 1-$np -V`
+        qsub2 = `qsub -N $jobname -terse -j y -R y -wd $wd -o $tempdir -l $time,$mem -t 1-$np -V`
         qsub_cmd = pipeline(qsub1, qsub2)
 
         if np == 1
@@ -48,9 +50,9 @@ function launch(manager::QSUB, params::Dict, launched::Array,
         @info "Job $id is in queue"
 
         filenames(i) = [
-            "$wd/julia-$(getpid()).o$id-$i",
-            "$wd/julia-$(getpid())-$i.o$id",
-            "$wd/julia-$(getpid()).o$id.$i"
+            "$tempdir/julia-$(getpid()).o$id-$i",
+            "$tempdir/julia-$(getpid())-$i.o$id",
+            "$tempdir/julia-$(getpid()).o$id.$i"
         ]
 
         for i in 1:np
@@ -88,6 +90,8 @@ function launch(manager::QSUB, params::Dict, launched::Array,
             if i == np
                 @info "All workers from job $id added"
             end
+
+            
         end
     catch e
         println("Error launching workers")
