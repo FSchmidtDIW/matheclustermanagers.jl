@@ -24,8 +24,8 @@ function launch(manager::QSUB, params::Dict, launched::Array,
         
         
         jobname = "julia-$(getpid())"
-        outputfile = joinpath(tempdir, "jobname.o")
-        @info "Temporary directory for output files is $outputfile"
+        outputfile = joinpath(tempdir, raw"$JOB_ID.$TASK_ID.o")
+        @info "Temporary directory for output files is $tempdir"
        
         cmd = `cd $dir '&&' $exename $exeflags $(worker_arg())` |>
             Base.shell_escape
