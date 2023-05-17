@@ -20,17 +20,17 @@ function launch(manager::QSUB, params::Dict, launched::Array,
         wd = manager.wd
         time = "h_rt=$(manager.time)"
         mem = "mem_free=$(manager.memory)G"
-        tempdir = mktempdir(wd)
         
         
         jobname = "julia-$(getpid())"
-        outputfile = joinpath(tempdir, raw"$JOB_ID.$TASK_ID.o")
-        @info "Temporary directory for output files is $tempdir"
+        outputfiledir = mkdir(jobname)
+
+        @info "Outputfiles located at $outputfiledir"
        
         cmd = `cd $dir '&&' $exename $exeflags $(worker_arg())` |>
             Base.shell_escape
         qsub1 = `echo $(cmd)`
-        qsub2 = `qsub -N $jobname -terse -j y -R y -wd $wd -o $outputfile -l $time,$mem -t 1-$np -V`
+        qsub2 = `qsub -N $jobname -terse -j y -R y -wd $wd -l $time,$mem -t 1-$np -V`
         qsub_cmd = pipeline(qsub1, qsub2)
 
         if np == 1
@@ -51,30 +51,22 @@ function launch(manager::QSUB, params::Dict, launched::Array,
 
         @info "Job $id is in queue"
 
-        filenames(i) = [
-            "$tempdir/julia-$(getpid()).o$id-$i",
-            "$tempdir/julia-$(getpid())-$i.o$id",
-            "$tempdir/julia-$(getpid()).o$id.$i"
-        ]
+        prog = ProgressUnknown(
+            "Looking for output files",
+            spinner=true
+        )
 
-        for i in 1:np
+        while !(length(readdir(outputfiledir)) == np)
+            ProgressMeter.update!(prog, spinner=raw"|/-\-")
+            sleep(1)
+        end
 
-            fnames = filenames(i)
+        ProgressMeter.finish!(prog)
 
-            prog = ProgressUnknown(
-                "Looking for output files",
-                spinner=true
-            )
+        @info "All output files found! $np workers will be added."
+        p = Progress(np, "Processing job files and adding workers")
 
-            j = 0
-            while (j=findfirst(x->isfile(x),fnames))==nothing
-                ProgressMeter.update!(prog, spinner=raw"|/-\-")
-                sleep(1)
-            end
-            fname = fnames[j]
-            ProgressMeter.finish!(prog)
-
-            @info "Found job file: $fname"
+        for (i,fname) in enumerate(readdir(outputfiledir))
 
             cmd_config = `tail -f $fname`
             config = WorkerConfig()
@@ -87,13 +79,7 @@ function launch(manager::QSUB, params::Dict, launched::Array,
             )
             push!(launched, config)
             notify(c)
-            @info "Added worker $i from job $id"
-
-            if i == np
-                @info "All workers from job $id added"
-            end
-
-            
+            next!(p)           
         end
     catch e
         println("Error launching workers")
