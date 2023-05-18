@@ -67,7 +67,7 @@ function launch(manager::QSUB, params::Dict, launched::Array,
         @info "All output files found! $np workers will be added."
         p = Progress(np, "Processing job files and adding workers")
 
-        for (i,fname) in enumerate(readdir(outputfiledir))
+        for (i,fname) in enumerate(readdir(outputfiledir, join=true))
 
             cmd_config = `tail -f $fname`
             config = WorkerConfig()
