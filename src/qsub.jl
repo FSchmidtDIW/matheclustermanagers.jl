@@ -26,11 +26,12 @@ function launch(manager::QSUB, params::Dict, launched::Array,
         outputfiledir = mkdir(jobname)
 
         @info "Outputfiles located at $outputfiledir"
+        ofile = joinpath(outputfiledir, raw"log.$JOB_ID.$TASK_ID.out")
        
         cmd = `cd $dir '&&' $exename $exeflags $(worker_arg())` |>
             Base.shell_escape
         qsub1 = `echo $(cmd)`
-        qsub2 = `qsub -N $jobname -terse -j y -R y -wd $wd -l $time,$mem -t 1-$np -V`
+        qsub2 = `qsub -N $jobname -terse -j y -R y -wd $wd -l $time,$mem -t 1-$np -V -o $ofile`
         qsub_cmd = pipeline(qsub1, qsub2)
 
         if np == 1
