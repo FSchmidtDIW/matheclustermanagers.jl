@@ -59,16 +59,16 @@ function launch(manager::QSUB, params::Dict, launched::Array,
 
         while !(length(readdir(outputfiledir)) == np)
             ProgressMeter.update!(prog, spinner=raw"|/-\-")
-            sleep(1)
+            sleep(2)
         end
-
+        sleep(5)
         ProgressMeter.finish!(prog)
 
         @info "All output files found! $np workers will be added."
         p = Progress(np, "Processing job files and adding workers")
 
         for (i,fname) in enumerate(readdir(outputfiledir, join=true))
-
+            @info "Processing file $fname"
             cmd_config = `tail -f $fname`
             config = WorkerConfig()
             stream = open(detach(cmd_config))
