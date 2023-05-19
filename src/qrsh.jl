@@ -81,7 +81,7 @@ function kill(manager::QRSH, id::Int64, config::WorkerConfig)
 end
 
 function qrsh(n::Int;
-    wdir=pwd(), timelimit::Int=10000, ram::Int=4, mp=1, kwargs...)
+    wdir=pwd(), timelimit::Int=10000, ram::Int=4, mp=1, topology=:master_worker, kwargs...)
 
-    addprocs(QRSH(n, wdir, timelimit, ram, mp); kwargs...)
+    addprocs(QRSH(n, wdir, timelimit, ram, mp); topology=topology, kwargs...)
 end

@@ -104,6 +104,6 @@ function kill(manager::QSUB, id::Int64, config::WorkerConfig)
     end
 end
 
-function qsub(n::Int; wdir=pwd(), timelimit::Int=10000, ram::Int=4,  kwargs...)
-    addprocs(QSUB(n, wdir, timelimit, ram); kwargs...)
+function qsub(n::Int; wdir=pwd(), timelimit::Int=10000, ram::Int=4, topology=:master_worker, kwargs...)
+    addprocs(QSUB(n, wdir, timelimit, ram);topology=topology, kwargs...)
 end
