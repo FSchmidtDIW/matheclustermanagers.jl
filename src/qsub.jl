@@ -69,9 +69,11 @@ function launch(manager::QSUB, params::Dict, launched::Array,
 
         for (i,fname) in enumerate(readdir(outputfiledir, join=true))
             @info "Processing file $fname"
+            sleep(10)
             cmd_config = `tail -f $fname`
             config = WorkerConfig()
             stream = open(detach(cmd_config))
+            println(stream)
             config.io = stream.out
             config.userdata = Dict{Symbol, Any}(
                 :job=>id,
