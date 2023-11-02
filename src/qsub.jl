@@ -69,7 +69,7 @@ function launch(manager::QSUB, params::Dict, launched::Array,
 
         for (i,fname) in enumerate(readdir(outputfiledir, join=true))
             @info "Processing file $fname"
-            sleep(10)
+            sleep(50)
             cmd_config = `tail -f $fname`
             config = WorkerConfig()
             stream = open(detach(cmd_config))
