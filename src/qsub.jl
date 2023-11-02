@@ -74,7 +74,7 @@ function launch(manager::QSUB, params::Dict, launched::Array,
             config = WorkerConfig()
             stream = open(detach(cmd_config))
             config.io = stream.out
-            println(stream.out)
+            #println(stream.out)
             config.userdata = Dict{Symbol, Any}(
                 :job=>id,
                 :task=>i,
